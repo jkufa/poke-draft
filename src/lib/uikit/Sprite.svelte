@@ -26,7 +26,7 @@
 </script>
 
 <img
-	class="render-pixelated h-full w-full object-cover"
+	class="render-pixelated pointer-events-none h-full w-full object-cover"
 	src={url}
 	alt={name}
 	onerror={handleError}

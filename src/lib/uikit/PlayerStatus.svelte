@@ -1,5 +1,14 @@
 <script lang="ts">
-	const STATUS = {
+	import type { PlayerStatus, PlayerType, Side } from '$lib/GameState.svelte';
+	type StatusText = Record<PlayerStatus, Record<PlayerType, string>>;
+
+	interface Props {
+		player: Player;
+	}
+	let { player }: Props = $props();
+
+	let { playerType, username, status, side, initiative } = $derived(player);
+	const statusTexts = $derived({
 		ACTIVE: {
 			PLAYER: 'YOUR TURN',
 			OPPONENT: 'DRAFTING'
@@ -7,18 +16,17 @@
 		INACTIVE: {
 			OPPONENT: 'UP NEXT',
 			PLAYER: 'UP NEXT'
+		},
+		PRE_DRAFT: {
+			PLAYER: initiative === 0 ? 'GOES FIRST 👑' : 'GOES SECOND',
+			OPPONENT: initiative === 0 ? 'GOES FIRST 👑' : 'GOES SECOND'
+		},
+		COMPLETE: {
+			PLAYER: 'DRAFT COMPLETE',
+			OPPONENT: 'DRAFT COMPLETE'
 		}
-	} as const;
-
-	interface Props {
-		playerType: 'PLAYER' | 'OPPONENT';
-		status: 'ACTIVE' | 'INACTIVE';
-		username: string;
-		side: 'LEFT' | 'RIGHT';
-	}
-	let { playerType, username, status, side }: Props = $props();
-
-	let statusText = $state(STATUS[status][playerType]);
+	} satisfies StatusText as const);
+	const statusText = $derived(statusTexts[status][playerType]);
 </script>
 
 <div class="flex items-center gap-2 {side === 'RIGHT' ? 'flex-row-reverse text-end' : ''}">

@@ -9,6 +9,6 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="mx-auto h-screen pt-32">
+<div class="mx-auto h-screen max-w-(--screen-standard) pt-16">
 	{@render children()}
 </div>

@@ -11,7 +11,7 @@
 	const activeSlot = $derived(player.party.length);
 </script>
 
-<div class="flex max-w-34 flex-col gap-4">
+<div class="flex w-34 flex-col gap-4">
 	{#each new Array(MAX_PARTY_SIZE).fill(null) as _, index}
 		<PartyTile
 			name={player.party[index]?.name}

@@ -1,11 +1,22 @@
 <script lang="ts">
-	import { DraftGrid, PlayerSide } from '$lib/uikit';
+	import { DraftGrid, GameClock, PlayerSide } from '$lib/uikit';
 	import { gameState } from '$lib/GameState.svelte';
+	import { untrack } from 'svelte';
 
 	let { data } = $props();
+
+	$effect(() => {
+		untrack(() => {
+			gameState.startGame(data.draftlist.pokemon);
+		});
+	});
+
+	$inspect(gameState.player);
+	$inspect(gameState.opponent);
 </script>
 
 <div class="max-w-8xl mx-auto px-8">
+	<GameClock />
 	<div class="grid-cols grid items-end justify-between gap-4">
 		<PlayerSide player={gameState.player} />
 		<DraftGrid pokemonList={data.draftlist.pokemon} />
@@ -15,6 +26,6 @@
 
 <style>
 	.grid-cols {
-		grid-template-columns: 8.5rem minmax(0, 80rem) 8.5rem;
+		grid-template-columns: 1fr minmax(0, 50rem) 1fr;
 	}
 </style>

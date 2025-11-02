@@ -7,10 +7,11 @@
 		player: Player;
 	}
 	let { player }: Props = $props();
-	let { playerType, username, status, side, party } = player;
 </script>
 
 <div class="flex flex-col gap-4">
-	<PlayerStatus {playerType} {username} {status} {side} />
-	<Party {player} />
+	<PlayerStatus {player} />
+	<div class={player.side === 'RIGHT' ? 'self-end' : ''}>
+		<Party {player} />
+	</div>
 </div>

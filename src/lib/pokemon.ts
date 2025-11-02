@@ -4,3 +4,4 @@ export interface Pokemon {
 }
 
 export const MAX_PARTY_SIZE = 6;
+export const CRY_URL = '/cries/latest';
