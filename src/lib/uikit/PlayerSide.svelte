@@ -1,17 +1,16 @@
 <script lang="ts">
+	import type { Player } from '$lib/GameState.svelte';
 	import Party from './Party.svelte';
 	import PlayerStatus from './PlayerStatus.svelte';
 
 	interface Props {
-		playerType: 'PLAYER' | 'OPPONENT';
-		username: string;
-		status: 'ACTIVE' | 'INACTIVE';
-		side: 'LEFT' | 'RIGHT';
+		player: Player;
 	}
-	let { playerType, username, status, side }: Props = $props();
+	let { player }: Props = $props();
+	let { playerType, username, status, side, party } = player;
 </script>
 
 <div class="flex flex-col gap-4">
 	<PlayerStatus {playerType} {username} {status} {side} />
-	<Party />
+	<Party {player} />
 </div>

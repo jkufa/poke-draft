@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Tile } from '.';
+	import DraftTile from './DraftTile.svelte';
 
 	interface Props {
 		pokemonList: {
@@ -10,8 +10,8 @@
 	let { pokemonList }: Props = $props();
 </script>
 
-<div class="grid grid-cols-5 gap-4">
+<div class="grid grid-cols-[repeat(5,minmax(0,8.5rem))] justify-center gap-4">
 	{#each pokemonList as pokemon}
-		<Tile name={pokemon.name} id={pokemon.id} />
+		<DraftTile name={pokemon.name} id={pokemon.id} />
 	{/each}
 </div>
