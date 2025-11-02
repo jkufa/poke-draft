@@ -23,5 +23,6 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 
-# Pokemon Sprites
+# Assets
 static/pokemon-sprites
+static/cries

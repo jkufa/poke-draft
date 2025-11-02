@@ -1,7 +1,6 @@
 <script lang="ts">
-	const MAX_PARTY_SIZE = 6;
-
 	import type { Player } from '$lib/GameState.svelte';
+	import { MAX_PARTY_SIZE } from '$lib/pokemon';
 	import PartyTile from './PartyTile.svelte';
 
 	interface Props {

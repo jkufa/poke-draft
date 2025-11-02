@@ -1,11 +1,14 @@
 import { SvelteSet } from "svelte/reactivity";
-import type { Pokemon } from "./pokemon";
+import { MAX_PARTY_SIZE, type Pokemon } from "./pokemon";
 
+export type PlayerType = 'PLAYER' | 'OPPONENT';
+export type PlayerStatus = 'ACTIVE' | 'INACTIVE' | 'COMPLETE';
+export type Side = 'LEFT' | 'RIGHT';
 export interface Player {
-  playerType: 'PLAYER' | 'OPPONENT';
+  playerType: PlayerType;
   username: string;
-  status: 'ACTIVE' | 'INACTIVE';
-  side: 'LEFT' | 'RIGHT';
+  status: PlayerStatus;
+  side: Side;
   party: Pokemon[];
 }
 
@@ -31,14 +34,22 @@ export class GameState {
     const draftedIds = this.player.party.concat(this.opponent.party).map(pokemon => pokemon.id);
     return new SvelteSet(draftedIds);
   });
+
   
   addToParty(playerType: 'PLAYER' | 'OPPONENT', pokemon: Pokemon) {
-    if (playerType === 'PLAYER') {
-      console.log('adding to player party', pokemon.name);
-      this.player.party.push(pokemon);
-    } else {
-      this.opponent.party.push(pokemon);
+    const player = playerType === 'PLAYER' ? this._player : this._opponent;
+    this.pushToParty(player, pokemon);
+    if (player.party.length >= MAX_PARTY_SIZE) {
+      this._player.status = 'COMPLETE';
     }
+
   }
+  private pushToParty(player: Player, pokemon: Pokemon) {
+    player.party.push(pokemon);
+  }
+  private removeFromParty(player: Player, pokemon: Pokemon) {
+    player.party = player.party.filter(p => p.id !== pokemon.id);
+  }
+
 }
 export const gameState = new GameState();

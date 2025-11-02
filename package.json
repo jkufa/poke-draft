@@ -36,6 +36,7 @@
 		"vite": "^7.1.10"
 	},
 	"dependencies": {
+		"cries": "github:PokeAPI/cries",
 		"pokemon-sprites": "github:PokeAPI/sprites",
 		"pokenode-ts": "^1.20.0"
 	}

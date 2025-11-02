@@ -25,4 +25,15 @@
 	}
 </script>
 
-<img class="h-full w-full object-cover" src={url} alt={name} onerror={handleError} />
+<img
+	class="render-pixelated h-full w-full object-cover"
+	src={url}
+	alt={name}
+	onerror={handleError}
+/>
+
+<style>
+	.render-pixelated {
+		image-rendering: pixelated;
+	}
+</style>

@@ -13,7 +13,7 @@
 <div
 	class={{
 		'flex flex-col items-center justify-center rounded-sm border border-gray-200 bg-gray-50 py-4 transition-colors duration-200': true,
-		'border-amber-300! bg-amber-300/8!': isActive
+		'animate-pulse border-amber-300! bg-amber-300/8!': isActive
 	}}
 >
 	<div class="mt-auto max-h-24">
