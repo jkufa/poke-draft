@@ -1,1 +1,5 @@
 @import 'tailwindcss';
+
+@theme {
+	--color-gold: oklch(0.5559 0.1283 77.29);
+}
