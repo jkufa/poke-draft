@@ -1,6 +1,7 @@
 import { SvelteSet, SvelteURL } from "svelte/reactivity";
 import { CRY_URL, MAX_PARTY_SIZE, type Pokemon } from "./pokemon";
-import { GameClockState } from "./uikit/GameClockState.svelte";
+import { GameClockState } from "./GameClockState.svelte";
+import { TurnState } from "./TurnState.svelte";
 
 export type PlayerType = 'PLAYER' | 'OPPONENT';
 export type PlayerStatus = 'PRE_DRAFT' | 'ACTIVE' | 'INACTIVE' | 'COMPLETE';
@@ -12,13 +13,6 @@ export interface Player {
   side: Side;
   party: Pokemon[];
   initiative: 0 | 1;
-}
-
-interface TurnState {
-  activePlayer: Player;
-  turnNumber: number;
-  selectedPokemon: Pokemon | null;
-  turnTimeRemaining: number;
 }
 
 export class GameState {
@@ -39,11 +33,7 @@ export class GameState {
     initiative: 1
   });
   private pokemonPool: Pokemon[] = [];
-  private turnState = $state<TurnState>({
-    activePlayer: this._player,
-    turnNumber: 0,
-    selectedPokemon: null,
-    turnTimeRemaining: 0
+  turn = new TurnState(({ prevTurn, newTurn }) => {
   });
 
   player = $derived<Readonly<Player>>({...this._player} as const);
@@ -52,49 +42,60 @@ export class GameState {
     const draftedIds = this.player.party.concat(this.opponent.party).map(pokemon => pokemon.id);
     return new SvelteSet(draftedIds);
   });
-  clock = new GameClockState(({ prevTurn, newTurn, timeRemaining }) => {
-    const isFirstTurn = prevTurn === 'PRE_DRAFT' && newTurn === 'DRAFT';
-    if (isFirstTurn) {
-      this._player.status = this.initialDraftStatus(this._player);
-      this._opponent.status = this.initialDraftStatus(this._opponent);
-      return;
-    }
-    if (prevTurn === 'DRAFT') {
-      const { activePlayer } = this.getPlayersByStatus();
-      if (!activePlayer) return;
-      // if active player did not draft a pokemon, give them a random pokemon
-      if (this.turnState.selectedPokemon === null) {
-        const randomPokemon = this.getRandomPokemon();
-        this.addToParty(activePlayer.playerType, randomPokemon, timeRemaining);
-      }
-    }
-  });
 
-  constructor() {
-  }
-
+  clock = new GameClockState();
 
   startGame(pool: Pokemon[]) {
     this.pokemonPool = pool;
-    this.clock.start();
+
+    this.turn.startNewTurn('');
+    this.clock.start({
+      turnType: 'PRE_DRAFT',
+      onTimeout: () => {
+        this.endTurn();
+
+        this._player = { ...this._player, status: this.getInitialDraftStatus(this._player) };
+        this._opponent = { ...this._opponent, status: this.getInitialDraftStatus(this._opponent) };
+
+        this.startTurn();
+      }
+    });
   }
 
   startTurn() {
-    this.clock.start();
     const activePlayer = this.getPlayersByStatus().activePlayer;
-    if (!activePlayer) return;
+    if (!activePlayer) {
+      console.log('No active player, cannot start turn');
+      return;
+    }
 
-    this.turnState.activePlayer = activePlayer;
-    this.turnState.turnNumber++;
-    this.turnState.selectedPokemon = null;
-    this.turnState.turnTimeRemaining = 30;
+    console.log('Starting turn for:', activePlayer.username);
+    this.turn.startNewTurn(activePlayer.username);
+
+    // Start new timer for the active player's turn
+    console.log('new start turn', this.turn.turnType);
+    this.clock.start({
+      turnType: this.turn.turnType,
+      onTimeout: () => {
+        console.log('Timer timeout for turn:', this.turn.turnType);
+        const { activePlayer } = this.getPlayersByStatus();
+        if (!activePlayer) return;
+        
+        // If no pokemon was selected, give random pokemon
+        if (this.turn.selectedPokemon === null) {
+          const randomPokemon = this.getRandomPokemon();
+          this.addToParty(activePlayer.playerType, randomPokemon);
+        } else {
+          this.endTurn();
+        }
+      }
+    });
   }
 
   endTurn() {
-    this.clock.stop();
+    this.turn.endTurn();
 
     const { activePlayer, inactivePlayer } = this.getPlayersByStatus();
-
     if (activePlayer) {
       activePlayer.status = activePlayer.party.length === MAX_PARTY_SIZE ? 'COMPLETE' : 'INACTIVE';
     }
@@ -102,19 +103,18 @@ export class GameState {
       inactivePlayer.status = 'ACTIVE';
     }
 
-    this.startTurn();
+    if (this.turn.totalTurnsLeft > 0) {
+      this.startTurn();
+    }
   }
 
   
-  addToParty(playerType: 'PLAYER' | 'OPPONENT', pokemon: Pokemon, timeRemaining: number) {
+  addToParty(playerType: 'PLAYER' | 'OPPONENT', pokemon: Pokemon) {
     const player = playerType === 'PLAYER' ? this._player : this._opponent;
 
     this.pushToParty(player, pokemon);
     this.playCry(pokemon);
-
-    this.turnState.selectedPokemon = pokemon;
-    this.turnState.turnTimeRemaining = timeRemaining;
-
+    this.turn.selectedPokemon = pokemon;
     this.pokemonPool = [...this.pokemonPool].filter(p => p.id !== pokemon.id);
 
     this.endTurn();
@@ -144,7 +144,6 @@ export class GameState {
     const inactivePlayer: Player | null = filterByStatus('INACTIVE')?.[0] ?? null;
     const completedPlayers: Player[] | null = activePlayer && inactivePlayer ? null : filterByStatus('COMPLETE');
     const preDraftPlayers: Player[] | null = activePlayer && inactivePlayer ? null : filterByStatus('PRE_DRAFT');
-
     return { activePlayer, inactivePlayer, completedPlayers, preDraftPlayers };
   }
 
@@ -155,7 +154,7 @@ export class GameState {
     audio.play();
   }
 
-  private initialDraftStatus(player: Player) {
+  private getInitialDraftStatus(player: Player) {
     if (player.initiative === 0) {
       return 'ACTIVE';
     }

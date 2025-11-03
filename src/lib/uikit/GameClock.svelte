@@ -8,12 +8,12 @@
 		POST_DRAFT: 'Draft completed!'
 	} as const;
 
-	let turnText = $derived(TURN_TEXT[gameState.clock.currentTurn]);
+	let turnText = $derived(TURN_TEXT[gameState.turn.turnType]);
 </script>
 
 <div class="flex items-center justify-center gap-1.5">
 	<p>{turnText}</p>
-	{#if gameState.clock.timeRemaining >= 0 && gameState.clock.currentTurn !== 'POST_DRAFT'}
+	{#if gameState.clock.timeRemaining >= 0 && gameState.turn.turnType !== 'POST_DRAFT'}
 		<span
 			class={{
 				'text-2xl font-bold transition-colors duration-400': true,

@@ -11,8 +11,10 @@
 		});
 	});
 
-	$inspect(gameState.player);
-	$inspect(gameState.opponent);
+	// $inspect(gameState.player);
+	// $inspect(gameState.opponent);
+
+	$inspect(gameState.turn.turnAudit);
 </script>
 
 <div class="max-w-8xl mx-auto px-8">

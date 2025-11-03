@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PlayerStatus, PlayerType, Side } from '$lib/GameState.svelte';
+	import type { Player, PlayerStatus, PlayerType, Side } from '$lib/GameState.svelte';
 	type StatusText = Record<PlayerStatus, Record<PlayerType, string>>;
 
 	interface Props {
@@ -25,13 +25,13 @@
 			PLAYER: 'DRAFT COMPLETE',
 			OPPONENT: 'DRAFT COMPLETE'
 		}
-	} satisfies StatusText as const);
+	} as const);
 	const statusText = $derived(statusTexts[status][playerType]);
 </script>
 
 <div class="flex items-center gap-2 {side === 'RIGHT' ? 'flex-row-reverse text-end' : ''}">
 	<div class="flex flex-col">
-		<p class="text-sm">{username}</p>
+		<p class="text-sm">{username} {player.status}</p>
 		<div class="flex items-center gap-2">
 			<p
 				class={{
