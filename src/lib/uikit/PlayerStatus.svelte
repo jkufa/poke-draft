@@ -31,7 +31,7 @@
 
 <div class="flex items-center gap-2 {side === 'RIGHT' ? 'flex-row-reverse text-end' : ''}">
 	<div class="flex flex-col">
-		<p class="text-sm">{username} {player.status}</p>
+		<p class="text-sm">{username}</p>
 		<div class="flex items-center gap-2">
 			<p
 				class={{

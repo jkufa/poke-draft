@@ -1,6 +1,6 @@
 import type { Pokemon } from "$lib/pokemon";
 
-export type TurnType = 'PRE_DRAFT' | 'DRAFT' | 'POST_DRAFT';
+export type TurnType = 'NONE' | 'PRE_DRAFT' | 'DRAFT' | 'POST_DRAFT';
 
 export interface TurnChangeParams {
   prevTurn: TurnType;
@@ -8,6 +8,10 @@ export interface TurnChangeParams {
 }
 
 export const TURN_COUNT_CONFIG = {
+  NONE: {
+    count: 0,
+    nextTurnType: 'PRE_DRAFT',
+  },
   PRE_DRAFT: {
     count: 1,
     nextTurnType: 'DRAFT',
@@ -36,8 +40,9 @@ export interface TurnAudit extends Turn {
 const BASE_TURN = {
   playerName: '',
   turnNumber: 0,
-  turnType: 'PRE_DRAFT',
+  turnType: 'NONE',
   turnsLeft: {
+    NONE: TURN_COUNT_CONFIG.NONE.count,
     PRE_DRAFT: TURN_COUNT_CONFIG.PRE_DRAFT.count,
     DRAFT: TURN_COUNT_CONFIG.DRAFT.count,
     POST_DRAFT: TURN_COUNT_CONFIG.POST_DRAFT.count,
@@ -54,24 +59,15 @@ export class TurnState {
   totalTurnsLeft = $derived(Object.values(this.currentTurn.turnsLeft).reduce((acc, curr) => acc + curr, 0));
   turnAudit = $derived([...this._turnAudit] as const);
 
-  constructor(onTurnChange: (params: TurnChangeParams) => void) {
-    this.onTurnChange = onTurnChange;
-  }
+  startNextTurn(playerName = '') {
+    const { turnNumber, turnsLeft, turnType } = this.currentTurn;
 
-  startNewTurn(playerName = '') {
-    const { turnNumber, turnsLeft } = this.currentTurn;
-    const prevTurnType = this.currentTurn.turnType;
+    const newTurnType = this.getNextTurnType(turnType, turnsLeft);
     const newTurnsLeft = {
       ...turnsLeft,
-      [prevTurnType]: turnsLeft[prevTurnType] - 1,
+      [newTurnType]: this.getTurnsLeft(newTurnType, turnsLeft),
     };
-    const newTurnType = this.getNextTurnType(prevTurnType, newTurnsLeft);
 
-
-    this.onTurnChange({
-      prevTurn: prevTurnType,
-      newTurn: newTurnType,
-    });
 
     this.selectedPokemon = null;
     this.currentTurn = {
@@ -86,7 +82,12 @@ export class TurnState {
     this._turnAudit.push({ ...this.currentTurn, selectedPokemon: this.selectedPokemon });
   }
 
-  private onTurnChange: (params: TurnChangeParams) => void;
+  private getTurnsLeft(turnType: TurnType, turnsLeft: Record<TurnType, number>): number {
+    if (turnType === 'NONE') {
+      return 0;
+    }
+    return turnsLeft[turnType] - 1;
+  }
 
   private getNextTurnType(currentTurnType: TurnType, turnsLeft: Record<TurnType, number>): TurnType {
     if (turnsLeft[currentTurnType] === 0) {

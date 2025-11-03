@@ -33,8 +33,7 @@ export class GameState {
     initiative: 1
   });
   private pokemonPool: Pokemon[] = [];
-  turn = new TurnState(({ prevTurn, newTurn }) => {
-  });
+  turn = new TurnState();
 
   player = $derived<Readonly<Player>>({...this._player} as const);
   opponent = $derived<Readonly<Player>>({...this._opponent} as const);
@@ -48,7 +47,7 @@ export class GameState {
   startGame(pool: Pokemon[]) {
     this.pokemonPool = pool;
 
-    this.turn.startNewTurn('');
+    this.turn.startNextTurn('');
     this.clock.start({
       turnType: 'PRE_DRAFT',
       onTimeout: () => {
@@ -66,11 +65,12 @@ export class GameState {
     const activePlayer = this.getPlayersByStatus().activePlayer;
     if (!activePlayer) {
       console.log('No active player, cannot start turn');
+      this.endGame();
       return;
     }
 
     console.log('Starting turn for:', activePlayer.username);
-    this.turn.startNewTurn(activePlayer.username);
+    this.turn.startNextTurn(activePlayer.username);
 
     // Start new timer for the active player's turn
     console.log('new start turn', this.turn.turnType);
@@ -106,6 +106,11 @@ export class GameState {
     if (this.turn.totalTurnsLeft > 0) {
       this.startTurn();
     }
+  }
+
+  endGame() {
+    this.clock.stop();
+    this.turn.startNextTurn(); // In this case, next turn is POST_DRAFT
   }
 
   
