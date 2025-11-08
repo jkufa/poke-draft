@@ -1,4 +1,6 @@
-type WebSocketData = {
+import { Receiver, ReceiverKey } from "./recievers";
+
+export type WebSocketData = {
   roomId: string | null;
   username: string;
 };
@@ -9,20 +11,36 @@ type PlayerAction = {
   turnNumber: number;
 }
 
+
+
+const rooms: Record<string, Room> = {};
+
+function createRoom(roomId: string, player: Player) {
+  if (rooms[roomId]) {
+    console.error(`Room ${roomId} already exists`);
+    return null;
+  }
+  rooms[roomId] = {
+    roomId,
+    players: { [player.username]: player },
+  };
+
+  return rooms[roomId];
+}
+
 const wss = Bun.serve({ 
   fetch(req, server) {
     const cookies = req.headers.get("cookie") ?? '';
     const cookieMap = new Bun.CookieMap(cookies);
     const username = cookieMap.get("username");
+    const roomId = new URL(req.url).searchParams.get("roomId");
 
-    if (!username) {
+    if (!username || !roomId) {
       return new Response("Unauthorized", { status: 401 });
     }
-    console.log(username);
     
     // upgrade the request to a WebSocket
     const sessionId = generateSessionId();
-    const roomId = new URL(req.url).searchParams.get("roomId");
     const result = server.upgrade(req, {
       data: {
         roomId,
@@ -34,8 +52,7 @@ const wss = Bun.serve({
     });
     if (result) {
       console.log(`upgraded request to websocket!`);
-
-      return; // do not return a Response
+      return;
     }
     return new Response("Upgrade failed", { status: 500 });
   },
@@ -46,14 +63,11 @@ const wss = Bun.serve({
         ws.send('Invalid message type');
         return;
       }
-      const playerAction = JSON.parse(message) as PlayerAction;
-      const { actionType, pokemonId, turnNumber } = playerAction;
-      ws.publish(`roomId:${ws.data.roomId}`, `${ws.data.username}: ${actionType} ${pokemonId} ${turnNumber}`);
+      const { type, data } = JSON.parse(message) as { type: ReceiverKey, data: unknown };
+      Receiver.validate(type, data).run(ws);
     },
     open(ws) {
-      console.log('open');
-      ws.send('Hello from server: ' + (ws.data.roomId ?? 'no room id') + ' ' + (ws.data.username ?? 'no username'));
-      ws.subscribe(`roomId:${ws.data.roomId}`);
+      ws.send('connection opened with' + ws.data.username + ' from ' + ws.remoteAddress);
     },
     close(ws) {
       console.log('close');
