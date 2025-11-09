@@ -7,6 +7,7 @@ const RECEIVER_KEYS = [
   'UPDATE_USERNAME',
   'CREATE_ROOM',
   'JOIN_ROOM',
+  'GET_ROOM',
   'LEAVE_ROOM',
   'START_GAME',
   'END_GAME',
@@ -16,10 +17,6 @@ const RECEIVER_KEYS = [
 export type ReceiverKey = (typeof RECEIVER_KEYS)[number];
 export const isReceiverKey = (key: string): key is ReceiverKey => {
   return RECEIVER_KEYS.includes(key as ReceiverKey);
-}
-
-type Test = {
-  username: string;
 }
 
 export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>, message: any) => void> = {
@@ -49,6 +46,7 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
       ws.subscribe(topic);
       ws.data.subscriptions.add(topic);
       ws.send(JSON.stringify({
+        host: ws.data.userId,
         type: 'CREATE_ROOM',
         status: 'success',
         message: `Room created successfully: ${roomId}`,
@@ -59,6 +57,29 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
     } else {
       ws.send('Room creation failed');
     }
+  },
+  GET_ROOM: (ws, message) => {
+    if (typeof message !== 'object' || message === null || !('roomId' in message) || typeof message.roomId !== 'string') {
+      ws.send('Invalid message: roomId required');
+      return;
+    }
+    const roomId = message.roomId;
+    const room = rm.getRoom(roomId);
+    if (room) {
+      ws.send(JSON.stringify({
+        type: 'GET_ROOM',
+        status: 'success',
+        message: `Room: ${roomId}`,
+        data: room,
+      }));
+      return;
+    }
+    ws.send(JSON.stringify({
+      type: 'GET_ROOM',
+      status: 'error',
+      message: `Room not found: ${roomId}`,
+      data: room,
+    }));
   },
   JOIN_ROOM: (ws, message) => {
     if (typeof message !== 'object' || message === null || !('roomId' in message) || typeof message.roomId !== 'string') {
@@ -75,7 +96,17 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
       const topic = `roomId:${roomId}`;
       ws.subscribe(topic);
       ws.data.subscriptions.add(topic);
-      ws.publish(topic, `${ws.data.userId} joined the room`);
+      const room = rm.getRoom(roomId);
+      ws.publish(topic, JSON.stringify({
+        type: 'JOIN_ROOM',
+        status: 'success',
+        message: `Joined room successfully: ${roomId}`,
+        data: {
+          host: room?.host.userId,
+          user: player.userId,
+          roomId: roomId,
+        },
+      }));
     } else {
       ws.send('Join room failed');
     }

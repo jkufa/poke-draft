@@ -1,13 +1,11 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
-	import type { SubmitFunction } from '@sveltejs/kit';
 	import { untrack } from 'svelte';
+	import { websocketContext } from '$lib/WebSocketContext.svelte';
 
-	let ws: WebSocket | null = null;
+	const ws = websocketContext;
 	$effect(() => {
 		untrack(() => {
-			ws = new WebSocket('ws://localhost:3000');
 			ws.onmessage = (event) => {
 				if (typeof event.data === 'string' && !event.data.startsWith('{')) {
 					console.log(event.data);

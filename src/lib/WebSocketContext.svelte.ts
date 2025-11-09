@@ -1,0 +1,1 @@
+export const websocketContext = $state<WebSocket>(new WebSocket('ws://localhost:3000'));
