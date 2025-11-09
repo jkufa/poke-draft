@@ -1,4 +1,5 @@
-export interface Player {
-  username: string;
+export interface BasePlayer {
+  userId: string;
+  username?: string;
   ipAddress: string;
 }

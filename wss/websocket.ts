@@ -1,7 +1,7 @@
-import { Receiver, ReceiverKey } from "./recievers";
+import { Receiver, ReceiverKey } from "./receivers";
 
 export type WebSocketData = {
-  username: string;
+  userId: string;
   subscriptions: Set<string>;
 };
 
@@ -9,9 +9,9 @@ const wss = Bun.serve({
   fetch(req, server) {
     const cookies = req.headers.get("cookie") ?? '';
     const cookieMap = new Bun.CookieMap(cookies);
-    const username = cookieMap.get("username");
+    const userId = cookieMap.get("userId");
 
-    if (!username) {
+    if (!userId) {
       return new Response("Unauthorized", { status: 401 });
     }
     
@@ -19,7 +19,7 @@ const wss = Bun.serve({
     const sessionId = generateSessionId();
     const result = server.upgrade(req, {
       data: {
-        username,
+        userId: userId,
         subscriptions: new Set<string>(),
       },
       headers: {
@@ -43,12 +43,13 @@ const wss = Bun.serve({
       Receiver.validate(type, data).run(ws);
     },
     open(ws) {
-      ws.send('connection opened with' + ws.data.username + ' from ' + ws.remoteAddress);
+      ws.send('connection opened with' + ws.data.userId + ' from ' + ws.remoteAddress);
     },
     close(ws) {
-      console.log(`Connection closed for ${ws.data.username}`);
+      console.log(`Connection closed for ${ws.data.userId}`);
       for (const topic of ws.data.subscriptions) {
         ws.unsubscribe(topic);
+        console.log(`Unsubscribed from ${topic}`);
       }
       ws.data.subscriptions.clear();
     },

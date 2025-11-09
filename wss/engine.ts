@@ -7,7 +7,9 @@ export interface Pokemon {
 }
 export interface Player {
   // playerType: PlayerType;
-  username: string;
+  userId: string;
+  username?: string;
+  ipAddress: string;
   // status: PlayerStatus;
   // side: Side;
   // party: Pokemon[];
@@ -19,7 +21,7 @@ export class Engine {
 
   constructor(players: Player[]) {
     this.players = players.reduce((acc, player) => {
-      acc[player.username] = player;
+      acc[player.userId] = player;
       return acc;
     }, {} as Record<string, Player>);
   }

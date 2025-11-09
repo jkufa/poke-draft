@@ -38,6 +38,7 @@
 	},
 	"dependencies": {
 		"cries": "github:PokeAPI/cries",
+		"human-id": "^4.1.2",
 		"pokemon-sprites": "github:PokeAPI/sprites",
 		"pokenode-ts": "^1.20.0"
 	}

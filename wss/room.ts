@@ -1,25 +1,46 @@
+import humanId from "human-id";
 import { Engine } from "./engine";
-import { Player } from "./player";
+import { BasePlayer } from "./player";
 
 const LOBBY_LIMIT = 2;
 
 class Room {
   id: string;
-  players: Player[];
+  players: BasePlayer[];
   engine: Engine;
-  host: Player;
+  host: BasePlayer;
 
-  constructor(id: string, host: Player) {
+  constructor(id: string, host: BasePlayer) {
     this.id = id;
     this.players = [host];
     this.host = host;
   }
 
-  addPlayer(player: Player) {
+  addPlayer(player: BasePlayer) {
     this.players.push(player);
   }
-  removePlayer(player: Player) {
-    this.players = this.players.filter((p) => p.username !== player.username);
+
+  removePlayer(player: BasePlayer) {
+    this.players = this.players.filter((p) => p.userId !== player.userId);
+  }
+
+  updatePlayer(player: Partial<BasePlayer> & { userId: string }) {
+    const playerIndex = this.getPlayerIndex(player.userId);
+    this.players[playerIndex] = { ...this.players[playerIndex], ...player };
+    return this.players[playerIndex];
+  }
+
+  getPlayer(userId: string) {
+    const index = this.getPlayerIndex(userId);
+    if (index === -1) {
+      console.error(`Player ${userId} not found`);
+      return null;
+    }
+    return this.players[index];
+  }
+
+  getPlayerIndex(userId: string) {
+    return this.players.findIndex((p) => p.userId === userId);
   }
 
   startGame() {
@@ -30,14 +51,14 @@ class Room {
 class RoomManager {
   private rooms: Map<string, Room> = new Map();
 
-  createRoom(player: Player) {
-    const roomId = RoomManager.generateRoomId(player.username);
+  createRoom(player: BasePlayer) {
+    const roomId = this.generateRoomId();
     const room = new Room(roomId, player);
     this.rooms.set(roomId, room);
     return roomId;
   }
 
-  joinRoom(roomId: string, player: Player) {
+  joinRoom(roomId: string, player: BasePlayer) {
     const room = this.rooms.get(roomId);
     if (!room) {
       console.error(`Room ${roomId} not found`);
@@ -47,26 +68,26 @@ class RoomManager {
       console.error(`Room ${roomId} is full!`);
       return false;
     }
-    if (room.players.some((p) => p.username === player.username)) {
-      console.error(`Player ${player.username} already in room ${roomId}`);
+    if (room.players.some((p) => p.userId === player.userId)) {
+      console.error(`Player ${player.userId} already in room ${roomId}`);
       return false;
     }
     room.players.push(player);
     return true;
   }
 
-  leaveRoom(roomId: string, player: Player) {
+  leaveRoom(roomId: string, player: BasePlayer) {
     const room = this.rooms.get(roomId);
     if (!room) {
       console.error(`Room ${roomId} not found`);
       return false;
     }
-    room.players = room.players.filter((p) => p.username !== player.username);
+    room.players = room.players.filter((p) => p.userId !== player.userId);
     if (room.players.length === 0) {
       this.deleteRoom(roomId);
       return true;
     }
-    console.log(`Player ${player.username} left room ${roomId}`);
+    console.log(`Player ${player.userId} left room ${roomId}`);
     return true;
   }
 
@@ -77,11 +98,22 @@ class RoomManager {
   }
 
   getRoom(roomId: string) {
-    return this.rooms.get(roomId);
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      console.error(`Room ${roomId} not found`);
+      return null;
+    }
+    return room;
   }
 
-  static generateRoomId(username: string) {
-    return username + '|' + crypto.randomUUID();
+  private generateRoomId() {
+    const id = humanId();
+    if (this.rooms.has(id)) {
+      console.error(`Room ID clash: ${id} already exists`);
+      return this.generateRoomId();
+    }
+    return id;
   }
 }
+export type IRoomManager = InstanceType<typeof RoomManager>;
 export const roomManager = new RoomManager();

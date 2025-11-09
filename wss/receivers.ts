@@ -1,29 +1,61 @@
 import { ServerWebSocket } from 'bun';
-import { Player } from './player';
+import { BasePlayer } from './player';
 import { roomManager as rm } from './room';
 import { WebSocketData } from './websocket';
 
-const RECEIVER_KEYS = ['CREATE_ROOM', 'JOIN_ROOM', 'LEAVE_ROOM', 'START_GAME', 'END_GAME', 'START_TURN', 'END_TURN'] as const;
-export type ReceiverKey  = (typeof RECEIVER_KEYS)[number];
+const RECEIVER_KEYS = [
+  'UPDATE_USERNAME',
+  'CREATE_ROOM',
+  'JOIN_ROOM',
+  'LEAVE_ROOM',
+  'START_GAME',
+  'END_GAME',
+  'START_TURN',
+  'END_TURN'
+] as const;
+export type ReceiverKey = (typeof RECEIVER_KEYS)[number];
 export const isReceiverKey = (key: string): key is ReceiverKey => {
   return RECEIVER_KEYS.includes(key as ReceiverKey);
 }
 
-// type ReceiverMessage = Player | Room
+type Test = {
+  username: string;
+}
 
 export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>, message: any) => void> = {
-  CREATE_ROOM: (ws) => {
-    const player: Player = {
-      username: ws.data.username,
+  UPDATE_USERNAME: (ws, message: { username: string }) => {
+    if (typeof message !== 'object' || message === null || !('username' in message) || typeof message.username !== 'string') {
+      ws.send('Invalid message: username required');
+      return;
+    }
+    const room = rm.getRoom(ws.data.userId);
+    const player = room?.updatePlayer({ userId: ws.data.userId, username: message.username });
+    if (player) {
+      ws.send('Username updated successfully');
+    } else {
+      ws.send('Username update failed');
+    }
+  },
+  CREATE_ROOM: (ws, message: { username: string }) => {
+    const player: BasePlayer = {
+      userId: ws.data.userId,
       ipAddress: ws.remoteAddress,
+      username: message.username,
     };
     const roomId = rm.createRoom(player);
     if (roomId) {
-      console.log(`${ws.data.username} created the room ${roomId}`);
+      console.log(`${ws.data.userId} created the room ${roomId}`);
       const topic = `roomId:${roomId}`;
       ws.subscribe(topic);
       ws.data.subscriptions.add(topic);
-      ws.send(`Room created successfully: ${roomId}`);
+      ws.send(JSON.stringify({
+        type: 'CREATE_ROOM',
+        status: 'success',
+        message: `Room created successfully: ${roomId}`,
+        data: {
+          roomId: roomId,
+        },
+      }));
     } else {
       ws.send('Room creation failed');
     }
@@ -34,8 +66,8 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
       return;
     }
     const roomId = message.roomId;
-    const player: Player = {
-      username: ws.data.username,
+    const player: BasePlayer = {
+      userId: ws.data.userId,
       ipAddress: ws.remoteAddress,
     };
     const success = rm.joinRoom(roomId, player);
@@ -43,7 +75,7 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
       const topic = `roomId:${roomId}`;
       ws.subscribe(topic);
       ws.data.subscriptions.add(topic);
-      ws.publish(topic, `${ws.data.username} joined the room`);
+      ws.publish(topic, `${ws.data.userId} joined the room`);
     } else {
       ws.send('Join room failed');
     }
@@ -54,14 +86,14 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
       return;
     }
     const roomId = message.roomId;
-    const player: Player = {
-      username: ws.data.username,
+    const player: BasePlayer = {
+      userId: ws.data.userId,
       ipAddress: ws.remoteAddress,
     };
     const success = rm.leaveRoom(roomId, player);
     if (success) {
       const topic = `roomId:${roomId}`;
-      ws.publish(topic, `${ws.data.username} left the room`);
+      ws.publish(topic, `${ws.data.userId} left the room`);
       ws.unsubscribe(topic);
       ws.data.subscriptions.delete(topic);
     } else {
@@ -79,7 +111,7 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
       ws.send('Room not found');
       return;
     }
-    if (room.host.username === ws.data.username) {
+    if (room.host.userId === ws.data.userId) {
       room.startGame();
       ws.send('Game started successfully');
     } else {
