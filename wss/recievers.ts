@@ -2,7 +2,6 @@ import { ServerWebSocket } from 'bun';
 import { Player } from './player';
 import { roomManager as rm } from './room';
 import { WebSocketData } from './websocket';
-import { Engine } from './engine';
 
 const RECEIVER_KEYS = ['CREATE_ROOM', 'JOIN_ROOM', 'LEAVE_ROOM', 'START_GAME', 'END_GAME', 'START_TURN', 'END_TURN'] as const;
 export type ReceiverKey  = (typeof RECEIVER_KEYS)[number];
@@ -21,13 +20,19 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
     const roomId = rm.createRoom(player);
     if (roomId) {
       console.log(`${ws.data.username} created the room ${roomId}`);
-      ws.subscribe(`roomId:${roomId}`);
+      const topic = `roomId:${roomId}`;
+      ws.subscribe(topic);
+      ws.data.subscriptions.add(topic);
       ws.send(`Room created successfully: ${roomId}`);
     } else {
       ws.send('Room creation failed');
     }
   },
-  JOIN_ROOM: (ws, message: { roomId: string }) => {
+  JOIN_ROOM: (ws, message) => {
+    if (typeof message !== 'object' || message === null || !('roomId' in message) || typeof message.roomId !== 'string') {
+      ws.send('Invalid message: roomId required');
+      return;
+    }
     const roomId = message.roomId;
     const player: Player = {
       username: ws.data.username,
@@ -35,13 +40,19 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
     };
     const success = rm.joinRoom(roomId, player);
     if (success) {
-      ws.subscribe(`roomId:${roomId}`);
-      ws.publish(`roomId:${roomId}`, `${ws.data.username} joined the room`);
+      const topic = `roomId:${roomId}`;
+      ws.subscribe(topic);
+      ws.data.subscriptions.add(topic);
+      ws.publish(topic, `${ws.data.username} joined the room`);
     } else {
       ws.send('Join room failed');
     }
   },
-  LEAVE_ROOM: (ws, message: { roomId: string }) => {
+  LEAVE_ROOM: (ws, message) => {
+    if (typeof message !== 'object' || message === null || !('roomId' in message) || typeof message.roomId !== 'string') {
+      ws.send('Invalid message: roomId required');
+      return;
+    }
     const roomId = message.roomId;
     const player: Player = {
       username: ws.data.username,
@@ -49,13 +60,19 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
     };
     const success = rm.leaveRoom(roomId, player);
     if (success) {
-      ws.publish(`roomId:${roomId}`, `${ws.data.username} left the room`);
-      ws.unsubscribe(`roomId:${roomId}`);
+      const topic = `roomId:${roomId}`;
+      ws.publish(topic, `${ws.data.username} left the room`);
+      ws.unsubscribe(topic);
+      ws.data.subscriptions.delete(topic);
     } else {
       ws.send('Leave room failed');
     }
   },
-  START_GAME: (ws, message: { roomId: string }) => {
+  START_GAME: (ws, message) => {
+    if (typeof message !== 'object' || message === null || !('roomId' in message) || typeof message.roomId !== 'string') {
+      ws.send('Invalid message: roomId required');
+      return;
+    }
     const roomId = message.roomId;
     const room = rm.getRoom(roomId);
     if (!room) {
