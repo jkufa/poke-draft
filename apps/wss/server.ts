@@ -1,4 +1,4 @@
-import { Receiver, ReceiverKey } from "./receivers";
+import { Receiver, ReceiverKey } from "@repo/websocket/server";
 
 export type WebSocketData = {
   userId: string;
@@ -6,6 +6,7 @@ export type WebSocketData = {
 };
 
 const wss = Bun.serve({
+  port: 5174,
   fetch(req, server) {
     const cookies = req.headers.get("cookie") ?? '';
     const cookieMap = new Bun.CookieMap(cookies);
@@ -46,6 +47,7 @@ const wss = Bun.serve({
       ws.send('connection opened with' + ws.data.userId + ' from ' + ws.remoteAddress);
     },
     close(ws) {
+      console.log(`test!`);
       console.log(`Connection closed for ${ws.data.userId}`);
       for (const topic of ws.data.subscriptions) {
         ws.unsubscribe(topic);

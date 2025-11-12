@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,9 +14,6 @@
     "lint": "eslint .",
     "test:integration": "playwright test",
     "test:unit": "vitest"
-  },
-  "dependencies": {
-    "@repo/ui": "*"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",

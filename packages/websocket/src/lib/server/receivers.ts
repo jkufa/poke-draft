@@ -1,7 +1,7 @@
 import { ServerWebSocket } from 'bun';
-import { BasePlayer } from './player';
-import { roomManager as rm } from './room';
-import { WebSocketData } from './websocket';
+import { type BasePlayer } from '@repo/draft-engine';
+import { roomManager as rm } from '@repo/draft-engine';
+import { WebSocketData } from './websocket-data';
 
 const RECEIVER_KEYS = [
   'UPDATE_USERNAME',
