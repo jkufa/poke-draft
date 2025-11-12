@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
+// TODO: revisit this as its not optimal
 function copySprites() {
   return {
     name: 'copy-pokemon-sprites',
