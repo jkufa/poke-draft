@@ -22,6 +22,8 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Turbo
+.turbo
 
 # Assets
 static/pokemon-sprites
