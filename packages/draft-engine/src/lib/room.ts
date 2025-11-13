@@ -1,30 +1,33 @@
 import humanId from "human-id";
 import { Engine } from "./engine";
-import { BasePlayer } from "./player";
+import { SensitivePlayer as Player } from "./player";
 
 const LOBBY_LIMIT = 2;
 
 class Room {
   id: string;
-  players: BasePlayer[];
+  players: Player[];
   engine: Engine;
-  host: BasePlayer;
+  #host: Player;
 
-  constructor(id: string, host: BasePlayer) {
+  constructor(id: string, host: Player) {
+    if (host.type !== 'HOST') {
+      throw new Error('first player must be a host!');
+    }
     this.id = id;
     this.players = [host];
-    this.host = host;
+    this.#host = host;
   }
 
-  addPlayer(player: BasePlayer) {
+  addPlayer(player: Player) {
     this.players.push(player);
   }
 
-  removePlayer(player: BasePlayer) {
+  removePlayer(player: Player) {
     this.players = this.players.filter((p) => p.userId !== player.userId);
   }
 
-  updatePlayer(player: Partial<BasePlayer> & { userId: string }) {
+  updatePlayer(player: Partial<Player> & { userId: string }) {
     const playerIndex = this.getPlayerIndex(player.userId);
     this.players[playerIndex] = { ...this.players[playerIndex], ...player };
     return this.players[playerIndex];
@@ -39,6 +42,11 @@ class Room {
     return this.players[index];
   }
 
+  getHost() {
+    return this.#host;
+  }
+
+
   getPlayerIndex(userId: string) {
     return this.players.findIndex((p) => p.userId === userId);
   }
@@ -51,19 +59,21 @@ class Room {
 class RoomManager {
   private rooms: Map<string, Room> = new Map();
 
-  createRoom(player: BasePlayer) {
+  createRoom(player: Player) {
     const roomId = this.generateRoomId();
     const room = new Room(roomId, player);
     this.rooms.set(roomId, room);
     return roomId;
   }
 
-  joinRoom(roomId: string, player: BasePlayer) {
+  joinRoom(roomId: string, player: Player) {
     const room = this.rooms.get(roomId);
     if (!room) {
       console.error(`Room ${roomId} not found`);
       return false;
     }
+    console.log('room.players', room.players);
+    console.log(room.getHost())
     if (room.players.length >= LOBBY_LIMIT) {
       console.error(`Room ${roomId} is full!`);
       return false;
@@ -76,7 +86,7 @@ class RoomManager {
     return true;
   }
 
-  leaveRoom(roomId: string, player: BasePlayer) {
+  leaveRoom(roomId: string, player: Player) {
     const room = this.rooms.get(roomId);
     if (!room) {
       console.error(`Room ${roomId} not found`);

@@ -13,8 +13,10 @@
       "name": "web",
       "version": "0.0.0",
       "devDependencies": {
+        "@repo/draft-engine": "*",
         "@repo/eslint-config": "*",
         "@repo/typescript-config": "*",
+        "@repo/websocket": "*",
         "@sveltejs/adapter-auto": "^4.0.0",
         "@sveltejs/kit": "^2.48.4",
         "@sveltejs/vite-plugin-svelte": "^5.1.0",

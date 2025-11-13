@@ -1,5 +1,5 @@
 import { ServerWebSocket } from 'bun';
-import { type BasePlayer } from '@repo/draft-engine';
+import { SensitivePlayer } from '@repo/draft-engine';
 import { roomManager as rm } from '@repo/draft-engine';
 import { WebSocketData } from './websocket-data';
 
@@ -34,10 +34,11 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
     }
   },
   CREATE_ROOM: (ws, message: { username: string }) => {
-    const player: BasePlayer = {
+    const player: SensitivePlayer = {
       userId: ws.data.userId,
       ipAddress: ws.remoteAddress,
       username: message.username,
+      type: 'HOST',
     };
     const roomId = rm.createRoom(player);
     if (roomId) {
@@ -87,23 +88,31 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
       return;
     }
     const roomId = message.roomId;
-    const player: BasePlayer = {
+    const player: SensitivePlayer = {
       userId: ws.data.userId,
       ipAddress: ws.remoteAddress,
+      type: 'GUEST',
     };
     const success = rm.joinRoom(roomId, player);
     if (success) {
       const topic = `roomId:${roomId}`;
       ws.subscribe(topic);
       ws.data.subscriptions.add(topic);
-      const room = rm.getRoom(roomId);
       ws.publish(topic, JSON.stringify({
         type: 'JOIN_ROOM',
         status: 'success',
         message: `Joined room successfully: ${roomId}`,
         data: {
-          host: room?.host.userId,
-          user: player.userId,
+          users: rm.getRoom(roomId)!.players.map(p => SensitivePlayer.toClient(p)) ?? [],
+          roomId: roomId,
+        },
+      }));
+      ws.send(JSON.stringify({
+        type: 'JOIN_ROOM',
+        status: 'success',
+        message: `Joined room successfully: ${roomId}`,
+        data: {
+          users: rm.getRoom(roomId)!.players.map(p => SensitivePlayer.toClient(p)) ?? [],
           roomId: roomId,
         },
       }));
@@ -116,20 +125,26 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
       ws.send('Invalid message: roomId required');
       return;
     }
+  
     const roomId = message.roomId;
-    const player: BasePlayer = {
-      userId: ws.data.userId,
-      ipAddress: ws.remoteAddress,
-    };
-    const success = rm.leaveRoom(roomId, player);
-    if (success) {
-      const topic = `roomId:${roomId}`;
-      ws.publish(topic, `${ws.data.userId} left the room`);
-      ws.unsubscribe(topic);
-      ws.data.subscriptions.delete(topic);
-    } else {
-      ws.send('Leave room failed');
+    const player = rm.getRoom(roomId)?.getPlayer(ws.data.userId);
+
+    if (!player) {
+      ws.send('Player not found');
+      return;
     }
+
+    const success = rm.leaveRoom(roomId, player);
+    if (!success) {
+      ws.send('Leave room failed');
+      return;
+    }
+
+    const topic = `roomId:${roomId}`;
+    ws.publish(topic, `${ws.data.userId} left the room`);
+    ws.unsubscribe(topic);
+    ws.data.subscriptions.delete(topic);
+
   },
   START_GAME: (ws, message) => {
     if (typeof message !== 'object' || message === null || !('roomId' in message) || typeof message.roomId !== 'string') {
@@ -142,11 +157,16 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
       ws.send('Room not found');
       return;
     }
-    if (room.host.userId === ws.data.userId) {
+    const host = room.getHost();
+    if (!host) {
+      ws.send('Host not found');
+      return;
+    }
+    if (host.userId === ws.data.userId) {
       room.startGame();
       ws.send('Game started successfully');
     } else {
-      ws.send('You are not the host of the room');
+      ws.send('You are not the host of the room!');
       return;
     }
   },

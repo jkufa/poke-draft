@@ -2,10 +2,14 @@
 	import { beforeNavigate } from '$app/navigation';
 	import { websocketContext } from '$lib/WebSocketContext.svelte.js';
 	import { untrack } from 'svelte';
+	import type { ClientPlayer } from '@repo/websocket/client';
 
 	let { data } = $props();
 
-	let username = $state('Player 1');
+	let username = $state('');
+	let players = $state<ClientPlayer[]>([]);
+	const host = $derived(players.find((p) => p.type === 'HOST'));
+	const guest = $derived(players.find((p) => p.type === 'GUEST'));
 
 	const ws = websocketContext;
 	$effect(() => {
@@ -23,22 +27,12 @@
 					message: string;
 					data: any;
 				};
-				if (type === 'GET_ROOM' && data.host.userId !== userId) {
-					console.log('Joining room', data.host.userId, userId);
-					ws.send(
-						JSON.stringify({
-							type: 'JOIN_ROOM',
-							data: {
-								roomId: roomId
-							}
-						})
-					);
-					return;
-				}
 
 				if (type === 'JOIN_ROOM') {
 					if (status === 'success') {
 						console.log('Joined room successfully', data);
+						console.log('data.users', data.users);
+						players = data.users;
 					} else {
 						console.error('Join room failed', message);
 					}
@@ -48,7 +42,7 @@
 				console.log('connected to websocket');
 				ws.send(
 					JSON.stringify({
-						type: 'GET_ROOM',
+						type: 'JOIN_ROOM',
 						data: {
 							roomId: data.roomId
 						}
@@ -98,7 +92,18 @@
 	</div>
 
 	<div class="flex flex-col items-center gap-2">
-		<div class="player1 w-full">
+		{@render PlayerSlot({ player: host })}
+		{@render PlayerSlot({ player: guest })}
+	</div>
+
+	<button class="rounded-xs border border-gray-500 px-4 py-2 disabled:opacity-50">
+		Start game
+	</button>
+</div>
+
+{#snippet PlayerSlot({ player }: { player: ClientPlayer | undefined })}
+	<div class="player1 w-full">
+		{#if player?.userId === data?.userId}
 			You:
 			<input
 				type="text"
@@ -106,19 +111,19 @@
 				bind:value={username}
 				class="outline:border-gray-500 rounded-xs p-2 hover:outline disabled:opacity-50"
 			/>
-		</div>
-		<div class="player2 w-full">
-			Opponent:
-			<span> Waiting for opponent... </span>
-			<button
-				onclick={shareLink}
-				class="rounded-xs border border-gray-500 px-4 py-2 disabled:opacity-50"
-			>
-				Share link
-			</button>
-		</div>
+		{:else}
+			<!-- Not you, but are they connected? -->
+			{#if player?.userId === undefined}
+				<span> Waiting for opponent... </span>
+				<button
+					onclick={shareLink}
+					class="rounded-xs border border-gray-500 px-4 py-2 disabled:opacity-50"
+				>
+					Share link
+				</button>
+			{:else}
+				<span> Opponent: {player.username ?? 'Player 2'} </span>
+			{/if}
+		{/if}
 	</div>
-	<button class="rounded-xs border border-gray-500 px-4 py-2 disabled:opacity-50">
-		Start game
-	</button>
-</div>
+{/snippet}

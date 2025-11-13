@@ -6,7 +6,7 @@ export type WebSocketData = {
 };
 
 const wss = Bun.serve({
-  port: 5174,
+  // port: 5174,
   fetch(req, server) {
     const cookies = req.headers.get("cookie") ?? '';
     const cookieMap = new Bun.CookieMap(cookies);

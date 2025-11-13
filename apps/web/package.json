@@ -18,6 +18,8 @@
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
+    "@repo/draft-engine": "*",
+    "@repo/websocket": "*",
     "@sveltejs/adapter-auto": "^4.0.0",
     "@sveltejs/kit": "^2.48.4",
     "@sveltejs/vite-plugin-svelte": "^5.1.0",

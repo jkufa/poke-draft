@@ -1,20 +1,4 @@
-export type PlayerType = 'PLAYER' | 'OPPONENT';
-export type PlayerStatus = 'PRE_DRAFT' | 'ACTIVE' | 'INACTIVE' | 'COMPLETE';
-export type Side = 'LEFT' | 'RIGHT';
-export interface Pokemon {
-  id: number;
-  name: string;
-}
-export interface Player {
-  // playerType: PlayerType;
-  userId: string;
-  username?: string;
-  ipAddress: string;
-  // status: PlayerStatus;
-  // side: Side;
-  // party: Pokemon[];
-  // initiative: 0 | 1;
-}
+import type { SensitivePlayer as Player } from "./player";
 
 export class Engine {
   private readonly players: Record<string, Player> = {} as const;
