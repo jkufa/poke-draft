@@ -2,11 +2,11 @@
 	import { beforeNavigate } from '$app/navigation';
 	import { websocketContext } from '$lib/WebSocketContext.svelte.js';
 	import { untrack } from 'svelte';
-	import type { ClientPlayer } from '@repo/websocket/client';
+	import type { ClientPlayer } from '@repo/draft-engine';
 
 	let { data } = $props();
 
-	let username = $state('');
+	let username = $state('Player');
 	let players = $state<ClientPlayer[]>([]);
 	const host = $derived(players.find((p) => p.type === 'HOST'));
 	const guest = $derived(players.find((p) => p.type === 'GUEST'));
@@ -30,9 +30,8 @@
 
 				if (type === 'JOIN_ROOM') {
 					if (status === 'success') {
-						console.log('Joined room successfully', data);
-						console.log('data.users', data.users);
 						players = data.users;
+						username = 'Player ' + (host?.userId === userId ? '1' : '2');
 					} else {
 						console.error('Join room failed', message);
 					}
@@ -102,6 +101,8 @@
 </div>
 
 {#snippet PlayerSlot({ player }: { player: ClientPlayer | undefined })}
+	{data.userId}
+	{player?.userId}
 	<div class="player1 w-full">
 		{#if player?.userId === data?.userId}
 			You:
@@ -109,7 +110,8 @@
 				type="text"
 				placeholder="Enter your username"
 				bind:value={username}
-				class="outline:border-gray-500 rounded-xs p-2 hover:outline disabled:opacity-50"
+				disabled
+				class="outline:border-gray-500 rounded-xs p-2 not:disabled:hover:outline disabled:opacity-50"
 			/>
 		{:else}
 			<!-- Not you, but are they connected? -->

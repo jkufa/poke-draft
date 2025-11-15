@@ -3,11 +3,13 @@ import { Engine } from "./engine";
 import { SensitivePlayer as Player } from "./player";
 
 const LOBBY_LIMIT = 2;
+const ROOM_TIMEOUT_MS = 180000; // 3 minutes
+const ROOM_IDLE_TIMEOUT_MS = 180000; // 3 minutes
 
 class Room {
   id: string;
   players: Player[];
-  engine: Engine;
+  engine!: Engine;
   #host: Player;
 
   constructor(id: string, host: Player) {
@@ -57,7 +59,8 @@ class Room {
 }
 
 class RoomManager {
-  private rooms: Map<string, Room> = new Map();
+  private readonly rooms = new Map<string, Room>();
+  private readonly timeoutIds = new Map<string, NodeJS.Timeout>();
 
   createRoom(player: Player) {
     const roomId = this.generateRoomId();
@@ -72,8 +75,6 @@ class RoomManager {
       console.error(`Room ${roomId} not found`);
       return false;
     }
-    console.log('room.players', room.players);
-    console.log(room.getHost())
     if (room.players.length >= LOBBY_LIMIT) {
       console.error(`Room ${roomId} is full!`);
       return false;
@@ -81,6 +82,12 @@ class RoomManager {
     if (room.players.some((p) => p.userId === player.userId)) {
       console.error(`Player ${player.userId} already in room ${roomId}`);
       return false;
+    }
+    const timeoutId = this.timeoutIds.get(roomId);
+    if (timeoutId) {
+      console.log(`Room ${roomId} was going to be deleted, cancelling timeout`);
+      clearTimeout(timeoutId);
+      this.timeoutIds.delete(roomId);
     }
     room.players.push(player);
     return true;
@@ -94,7 +101,10 @@ class RoomManager {
     }
     room.players = room.players.filter((p) => p.userId !== player.userId);
     if (room.players.length === 0) {
-      this.deleteRoom(roomId);
+      console.log(`Room ${roomId} is empty, deleting in ${ROOM_TIMEOUT_MS}ms`);
+      this.timeoutIds.set(roomId, setTimeout(() => {
+        this.deleteRoom(roomId);
+      }, ROOM_TIMEOUT_MS));
       return true;
     }
     console.log(`Player ${player.userId} left room ${roomId}`);
@@ -116,7 +126,7 @@ class RoomManager {
     return room;
   }
 
-  private generateRoomId() {
+  private generateRoomId(): string {
     const id = humanId();
     if (this.rooms.has(id)) {
       console.error(`Room ID clash: ${id} already exists`);

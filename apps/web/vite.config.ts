@@ -40,6 +40,6 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     sveltekit(),
-    copySprites()
+    // copySprites()
   ]
 });
