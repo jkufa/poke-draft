@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { beforeNavigate } from '$app/navigation';
-	import { websocketContext } from '$lib/WebSocketContext.svelte.js';
+	// import { websocketContext } from '$lib/WebSocketContext.svelte.js';
 	import { untrack } from 'svelte';
 	import type { ClientPlayer } from '@repo/draft-engine';
+	import { websocketContext } from '$lib/client/WebSocketContext.svelte';
 
 	let { data } = $props();
 
@@ -11,49 +12,11 @@
 	const host = $derived(players.find((p) => p.type === 'HOST'));
 	const guest = $derived(players.find((p) => p.type === 'GUEST'));
 
-	const ws = websocketContext;
+	const wsc = websocketContext;
+	// let wsc: ZodWebSocketClient;
 	$effect(() => {
-		untrack(() => {
-			const roomId = data.roomId;
-			const userId = data.userId;
-			ws.onmessage = (event) => {
-				if (typeof event.data === 'string' && !event.data.startsWith('{')) {
-					console.log(event.data);
-					return;
-				}
-				const { type, status, message, data } = JSON.parse(event.data) as {
-					type: string;
-					status: 'success' | 'error';
-					message: string;
-					data: any;
-				};
-
-				if (type === 'JOIN_ROOM') {
-					if (status === 'success') {
-						players = data.users;
-						username = 'Player ' + (host?.userId === userId ? '1' : '2');
-					} else {
-						console.error('Join room failed', message);
-					}
-				}
-			};
-			ws.onopen = () => {
-				console.log('connected to websocket');
-				ws.send(
-					JSON.stringify({
-						type: 'JOIN_ROOM',
-						data: {
-							roomId: data.roomId
-						}
-					})
-				);
-			};
-			ws.onclose = () => {
-				console.log('disconnected from websocket');
-			};
-			ws.onerror = (event) => {
-				console.error('websocket error', event);
-			};
+		untrack(async () => {
+			await wsc.connect();
 		});
 	});
 
@@ -64,16 +27,8 @@
 		navigator.clipboard.writeText(window.location.href);
 	}
 
-	function handleLeave() {
-		console.log('beforeunload');
-		ws.send(
-			JSON.stringify({
-				type: 'LEAVE_ROOM',
-				data: {
-					roomId: data.roomId
-				}
-			})
-		);
+	async function handleLeave() {
+		await wsc.close();
 	}
 </script>
 

@@ -1,3 +1,5 @@
+export const ssr = false;
+
 export const load = async ({ cookies }) => {
   // get userId from cookies
   // if not found, generate a uuid and set it in cookies

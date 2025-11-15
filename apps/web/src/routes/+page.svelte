@@ -1,51 +1,21 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { websocketContext } from '$lib/client/WebSocketContext.svelte';
 	import { untrack } from 'svelte';
-	import { websocketContext } from '$lib/WebSocketContext.svelte';
+	import { CreateRoom, CreateRoomSuccess } from '@repo/websocket';
 
-	const ws = websocketContext;
+	const wsc = websocketContext;
 	$effect(() => {
-		untrack(() => {
-			ws.onmessage = (event) => {
-				if (typeof event.data === 'string' && !event.data.startsWith('{')) {
-					console.log(event.data);
-					return;
-				}
-				const { type, status, message, data } = JSON.parse(event.data) as {
-					type: string;
-					status: 'success' | 'error';
-					message: string;
-					data: any;
-				};
-				if (type === 'CREATE_ROOM') {
-					if (status === 'success') {
-						console.log('Room created successfully', data);
-						goto(`/room/${data.roomId}`);
-					} else {
-						console.error('Room creation failed', message);
-					}
-				}
-			};
-			ws.onopen = () => {
-				console.log('connected to websocket');
-			};
-			ws.onclose = () => {
-				console.log('disconnected from websocket');
-			};
-			ws.onerror = (event) => {
-				console.error('websocket error', event);
-			};
+		untrack(async () => {
+			await wsc.connect();
 		});
 	});
 
-	function createRoom() {
-		const msg = {
-			type: 'CREATE_ROOM',
-			data: {
-				username: 'Player 1'
-			}
-		};
-		ws?.send(JSON.stringify(msg));
+	async function createRoom() {
+		await wsc.send(CreateRoom);
+		await wsc.on(CreateRoomSuccess, (msg) => {
+			goto(`/room/${msg.payload.roomId}`);
+		});
 	}
 </script>
 

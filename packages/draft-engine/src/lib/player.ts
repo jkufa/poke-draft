@@ -1,4 +1,5 @@
-import type { Pokemon } from "./pokemon";
+import { z } from "zod";
+import { Pokemon } from "./pokemon";
 
 /**
  * We need two versions of player
@@ -19,39 +20,35 @@ export interface SensitivePlayerData {
   ipAddress: string;
 }
 
-export type PlayerStatus = 'PRE_DRAFT' | 'ACTIVE' | 'INACTIVE' | 'COMPLETE';
-export type PlayerType = 'HOST' | 'GUEST';
+export const PlayerStatus = z.enum(['PRE_DRAFT', 'ACTIVE', 'INACTIVE', 'COMPLETE']);
+export type PlayerStatus = z.infer<typeof PlayerStatus>;
 
-export interface BasePlayer {
-  userId: string;
-  type: PlayerType;
-  username?: string;
-  gameInfo?: {
-    status: PlayerStatus;
-    party: Pokemon[];
-    initiative: 0 | 1;
-  }
-}
-export interface ClientPlayer extends BasePlayer {}
+export const PlayerType = z.enum(['HOST', 'GUEST']);
+export type PlayerType = z.infer<typeof PlayerType>;
 
-interface ISensitivePlayer extends BasePlayer, SensitivePlayerData {}
-export class SensitivePlayer implements ISensitivePlayer {
-  userId: string;
-  ipAddress: string;
-  type: PlayerType;
-  username?: string;
-  gameInfo?: {
-    status: PlayerStatus;
-    party: Pokemon[];
-    initiative: 0 | 1;
-  }
 
-  constructor(data: ISensitivePlayer) {
-    Object.assign(this, data);
-  }
+const BasePlayer = z.object({
+  userId: z.string(),
+  type: PlayerType,
+  username: z.string().optional(),
+  gameInfo: z.object({
+    status: PlayerStatus,
+    party: z.array(Pokemon),
+    initiative: z.literal(0).or(z.literal(1)),
+  }).optional(),
+});
+type BasePlayer = z.infer<typeof BasePlayer>;
 
-  static toClient(player: ISensitivePlayer): ClientPlayer {
-    const { ipAddress, ...clientPlayer } = player;
-    return clientPlayer;
-  }
+export const ClientPlayer = BasePlayer;
+export type ClientPlayer = z.infer<typeof ClientPlayer>;
+
+export const SensitivePlayer = BasePlayer.extend({
+  ipAddress: z.string(),
+});
+export type SensitivePlayer = z.infer<typeof SensitivePlayer>;
+
+
+export function toClientPlayer(player: SensitivePlayer): ClientPlayer {
+  const { ipAddress, ...clientPlayer } = player;
+  return clientPlayer;
 }

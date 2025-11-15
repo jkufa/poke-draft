@@ -6,7 +6,7 @@ import { TurnState } from "./TurnState.svelte";
 export type PlayerType = 'PLAYER' | 'OPPONENT';
 export type PlayerStatus = 'PRE_DRAFT' | 'ACTIVE' | 'INACTIVE' | 'COMPLETE';
 export type Side = 'LEFT' | 'RIGHT';
-export interface Player {
+export interface Player { 
   playerType: PlayerType;
   username: string;
   status: PlayerStatus;

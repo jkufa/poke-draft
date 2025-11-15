@@ -16,27 +16,29 @@
     "test:unit": "vitest"
   },
   "devDependencies": {
+    "@repo/draft-engine": "*",
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
-    "@repo/draft-engine": "*",
     "@repo/websocket": "*",
     "@sveltejs/adapter-auto": "^4.0.0",
     "@sveltejs/kit": "^2.48.4",
     "@sveltejs/vite-plugin-svelte": "^5.1.0",
-		"@tailwindcss/vite": "^4.1.14",
-		"@types/node": "^22",
-    "prettier": "^3.6.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/node": "^22",
+    "@ws-kit/client": "link:@ws-kit/client",
+    "@ws-kit/zod": "^0.3.4",
     "eslint": "^9.39.1",
+    "prettier": "^3.6.0",
     "prettier-plugin-svelte": "^3.4.0",
-		"prettier-plugin-tailwindcss": "^0.7.1",
+    "prettier-plugin-tailwindcss": "^0.7.1",
     "svelte": "^5.43.5",
     "svelte-check": "^4.3.0",
+    "tailwindcss": "^4.1.14",
     "tslib": "^2.8.1",
     "typescript": "5.9.2",
     "vite": "^6.3.2",
     "vitest": "^3.2.0",
-		"tailwindcss": "^4.1.14",
-    "cries": "github:PokeAPI/cries",
-    "pokemon-sprites": "github:PokeAPI/sprites"
-  }
+    "zod": "^4.1.12"
+  },
+  "dependencies": {}
 }

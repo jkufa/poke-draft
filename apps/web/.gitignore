@@ -11,3 +11,5 @@ vite.config.ts.timestamp-*
 
 # Assets
 static/
+# Ignore dist
+src/dist/

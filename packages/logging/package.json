@@ -1,5 +1,5 @@
 {
-  "name": "@repo/draft-engine",
+  "name": "@repo/logging",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,8 +7,6 @@
     "access": "public"
   },
   "dependencies": {
-    "human-id": "^4.1.2",
-    "zod": "^4.1.12"
-  },
-  "main": "src/index.ts"
+    "pino": "^9.9.0"
+  }
 }

@@ -8,8 +8,7 @@ const ROOM_IDLE_TIMEOUT_MS = 180000; // 3 minutes
 
 class Room {
   id: string;
-  players: Player[];
-  engine!: Engine;
+  players = new Map<string, Player>();
   #host: Player;
 
   constructor(id: string, host: Player) {
@@ -17,31 +16,38 @@ class Room {
       throw new Error('first player must be a host!');
     }
     this.id = id;
-    this.players = [host];
+    this.players.set(host.userId, host);
     this.#host = host;
   }
 
   addPlayer(player: Player) {
-    this.players.push(player);
+    this.players.set(player.userId, player);
   }
 
   removePlayer(player: Player) {
-    this.players = this.players.filter((p) => p.userId !== player.userId);
+    return this.players.delete(player.userId);
   }
 
   updatePlayer(player: Partial<Player> & { userId: string }) {
-    const playerIndex = this.getPlayerIndex(player.userId);
-    this.players[playerIndex] = { ...this.players[playerIndex], ...player };
-    return this.players[playerIndex];
+    if (!this.players.has(player.userId)) {
+      console.error(`Player ${player.userId} not found`);
+      return null;
+    }
+    this.players.set(player.userId, { ...this.players.get(player.userId)!, ...player });
+    return this.players.get(player.userId)!;
   }
 
   getPlayer(userId: string) {
-    const index = this.getPlayerIndex(userId);
-    if (index === -1) {
+    const player = this.players.get(userId);
+    if (!player) {
       console.error(`Player ${userId} not found`);
       return null;
     }
-    return this.players[index];
+    return player;
+  }
+
+  getAllPlayers() {
+    return Array.from(this.players.values());
   }
 
   getHost() {
@@ -49,12 +55,8 @@ class Room {
   }
 
 
-  getPlayerIndex(userId: string) {
-    return this.players.findIndex((p) => p.userId === userId);
-  }
-
   startGame() {
-    this.engine = Engine.start(this.players);
+    // this.engine = Engine.start(this.players);
   }
 }
 
@@ -66,7 +68,7 @@ class RoomManager {
     const roomId = this.generateRoomId();
     const room = new Room(roomId, player);
     this.rooms.set(roomId, room);
-    return roomId;
+    return room;
   }
 
   joinRoom(roomId: string, player: Player) {
@@ -75,11 +77,11 @@ class RoomManager {
       console.error(`Room ${roomId} not found`);
       return false;
     }
-    if (room.players.length >= LOBBY_LIMIT) {
+    if (room.players.size >= LOBBY_LIMIT) {
       console.error(`Room ${roomId} is full!`);
       return false;
     }
-    if (room.players.some((p) => p.userId === player.userId)) {
+    if (room.players.has(player.userId)) {
       console.error(`Player ${player.userId} already in room ${roomId}`);
       return false;
     }
@@ -89,7 +91,7 @@ class RoomManager {
       clearTimeout(timeoutId);
       this.timeoutIds.delete(roomId);
     }
-    room.players.push(player);
+    room.addPlayer(player);
     return true;
   }
 
@@ -99,8 +101,8 @@ class RoomManager {
       console.error(`Room ${roomId} not found`);
       return false;
     }
-    room.players = room.players.filter((p) => p.userId !== player.userId);
-    if (room.players.length === 0) {
+    room.removePlayer(player);
+    if (room.players.size === 0) {
       console.log(`Room ${roomId} is empty, deleting in ${ROOM_TIMEOUT_MS}ms`);
       this.timeoutIds.set(roomId, setTimeout(() => {
         this.deleteRoom(roomId);
