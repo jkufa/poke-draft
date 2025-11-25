@@ -52,3 +52,7 @@ export function toClientPlayer(player: SensitivePlayer): ClientPlayer {
   const { ipAddress, ...clientPlayer } = player;
   return clientPlayer;
 }
+
+export function toClientPlayers(players: SensitivePlayer[]): ClientPlayer[] {
+  return players.map(toClientPlayer);
+}

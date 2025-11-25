@@ -1,10 +1,10 @@
 import { createRouter } from "@ws-kit/zod";
 import { ConnectionMetadata } from "../../metadata";
 import * as actions from "./actions";
-import * as schema from "./events";
+import { CreateRoom, JoinRoom, LeaveRoom } from "@repo/websocket";
 
 export const roomRouter = createRouter<ConnectionMetadata>();
 
-roomRouter.on(schema.CreateRoom, actions.createRoom);
-roomRouter.on(schema.JoinRoom, actions.joinRoom);
-roomRouter.on(schema.LeaveRoom, actions.leaveRoom);
+roomRouter.on(CreateRoom, actions.createRoom);
+roomRouter.on(JoinRoom, actions.joinRoom);
+roomRouter.on(LeaveRoom, actions.leaveRoom);

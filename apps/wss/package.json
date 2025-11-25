@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun server.ts --watch --hot --no-clear-screen",
+    "dev": "bun --hot server.ts",
     "prod": "bun server.ts",
     "test": "bun test",
     "test:watch": "bun test:watch",

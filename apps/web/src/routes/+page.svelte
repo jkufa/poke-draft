@@ -7,15 +7,12 @@
 	const wsc = websocketContext;
 	$effect(() => {
 		untrack(async () => {
-			await wsc.connect();
+			// await wsc.connect();
 		});
 	});
 
 	async function createRoom() {
-		await wsc.send(CreateRoom);
-		await wsc.on(CreateRoomSuccess, (msg) => {
-			goto(`/room/${msg.payload.roomId}`);
-		});
+		wsc.send(CreateRoom);
 	}
 </script>
 

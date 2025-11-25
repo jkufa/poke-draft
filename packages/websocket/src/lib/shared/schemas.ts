@@ -2,11 +2,12 @@ import { ClientPlayer } from "@repo/draft-engine";
 import { message, z } from "@ws-kit/zod";
 import { maxLength } from "human-id";
 
-export const RoomId = z.string().length(maxLength());
+export const RoomId = z.string().max(maxLength())
 
 export const CreateRoom = message('CREATE_ROOM');
 export const CreateRoomSuccess = message('CREATE_ROOM_SUCCESS', {
   roomId: RoomId,
+  users: z.array(ClientPlayer)
 });
 
 export const JoinRoom = message('JOIN_ROOM', {

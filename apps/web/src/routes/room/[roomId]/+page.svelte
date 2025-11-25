@@ -4,6 +4,7 @@
 	import { untrack } from 'svelte';
 	import type { ClientPlayer } from '@repo/draft-engine';
 	import { websocketContext } from '$lib/client/WebSocketContext.svelte';
+	import { JoinRoom } from '@repo/websocket';
 
 	let { data } = $props();
 
@@ -17,6 +18,7 @@
 	$effect(() => {
 		untrack(async () => {
 			await wsc.connect();
+			await wsc.send(JoinRoom, { roomId: data.roomId });
 		});
 	});
 
