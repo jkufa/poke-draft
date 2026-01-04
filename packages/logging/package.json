@@ -7,6 +7,10 @@
     "access": "public"
   },
   "dependencies": {
-    "pino": "^9.9.0"
+    "events": "^3.1.0"
+  },
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
   }
 }

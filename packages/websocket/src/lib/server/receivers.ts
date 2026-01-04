@@ -1,7 +1,10 @@
-import { ServerWebSocket } from 'bun';
+import type { ServerWebSocket } from 'bun';
 import { SensitivePlayer } from '@repo/draft-engine';
 import { roomManager as rm } from '@repo/draft-engine';
-import { WebSocketData } from './websocket-data';
+import type { WebSocketData } from './websocket-data';
+import { logging } from '@repo/logging';
+
+const logger = logging.getLogger('websocket.receivers');
 
 const RECEIVER_KEYS = [
   'UPDATE_USERNAME',
@@ -42,7 +45,7 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
     };
     const roomId = rm.createRoom(player);
     if (roomId) {
-      console.log(`${ws.data.userId} created the room ${roomId}`);
+      logger.info({ event: `Created room ${roomId}` });
       const topic = `roomId:${roomId}`;
       ws.subscribe(topic);
       ws.data.subscriptions.add(topic);
@@ -171,13 +174,13 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
     }
   },
   END_GAME: (ws, message) => {
-    console.log('END_GAME', message);
+    logger.info({ event: 'END_GAME', message });
   },
   START_TURN: (ws, message) => {
-    console.log('START_TURN', message);
+    logger.info({ event: 'START_TURN', message });
   },
   END_TURN: (ws, message) => {
-    console.log('END_TURN', message);
+    logger.info({ event: 'END_TURN', message });
   },
 } as const;
 

@@ -7,7 +7,6 @@ const client = wsClient({
   url: "ws://localhost:5175",
 });
 client.on(CreateRoomSuccess, (msg) => {
-  console.log(msg);
   goto(`/room/${msg.payload.roomId}`);
 });
 await client.connect();

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --hot server.ts",
+    "dev": "bun --inspect --hot server.ts",
     "prod": "bun server.ts",
     "test": "bun test",
     "test:watch": "bun test:watch",
@@ -16,6 +16,7 @@
   "dependencies": {
     "@repo/websocket": "*",
     "@repo/draft-engine": "*",
+    "@repo/logging": "*",
     "@ws-kit/bun": "^0.3.5",
     "@ws-kit/zod": "^0.3.4",
     "zod": "^4.1.12",

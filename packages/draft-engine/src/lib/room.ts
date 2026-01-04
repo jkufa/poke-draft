@@ -3,7 +3,7 @@ import { Engine } from "./engine";
 import { SensitivePlayer as Player } from "./player";
 
 const LOBBY_LIMIT = 2;
-const ROOM_TIMEOUT_MS = 180000; // 3 minutes
+const ROOM_TIMEOUT_MS = 1000; //180000; // 3 minutes
 const ROOM_IDLE_TIMEOUT_MS = 180000; // 3 minutes
 
 class Room {
@@ -77,20 +77,24 @@ class RoomManager {
       console.error(`Room ${roomId} not found`);
       return false;
     }
+
     if (room.players.size >= LOBBY_LIMIT) {
       console.error(`Room ${roomId} is full!`);
       return false;
     }
+
     if (room.players.has(player.userId)) {
       console.error(`Player ${player.userId} already in room ${roomId}`);
       return false;
     }
+
     const timeoutId = this.timeoutIds.get(roomId);
     if (timeoutId) {
       console.log(`Room ${roomId} was going to be deleted, cancelling timeout`);
       clearTimeout(timeoutId);
       this.timeoutIds.delete(roomId);
     }
+
     room.addPlayer(player);
     return true;
   }
@@ -105,6 +109,7 @@ class RoomManager {
     if (room.players.size === 0) {
       console.log(`Room ${roomId} is empty, deleting in ${ROOM_TIMEOUT_MS}ms`);
       this.timeoutIds.set(roomId, setTimeout(() => {
+        console.log(`Deleting room ${roomId} after timeout`);
         this.deleteRoom(roomId);
       }, ROOM_TIMEOUT_MS));
       return true;

@@ -1,72 +1,72 @@
-import { MessageHandler, MessageSchemaType } from "@ws-kit/zod";
-import { roomManager as rm, toClientPlayer, toClientPlayers } from '@repo/draft-engine';
-import { ConnectionMetadata } from "../../metadata";
+import { MessageHandler, MessageSchemaType, z } from "@ws-kit/zod";
+import { roomManager as rm, toClientPlayers, SensitivePlayer } from '@repo/draft-engine';
 import { CreateRoom, JoinRoom, LeaveRoom, CreateRoomSuccess, RoomId, LeaveRoomSuccess, JoinRoomSuccess } from "@repo/websocket";
-import { SensitivePlayer } from "../../../../../packages/draft-engine/src";
-import { getTopic } from "../../../../../packages/websocket/src/lib/shared/get-topic";
+import { getTopic } from "@repo/websocket";
+import { ConnectionMetadata } from "../../metadata";
 
 type Action<T extends MessageSchemaType> = MessageHandler<T, ConnectionMetadata>;
 
-const TOPIC_PREFIX = 'roomId:';
+const TOPIC_PREFIX = 'roomId';
 
-export const createRoom: Action<typeof CreateRoom> = async ({ ws, error, send, publish }) => {
+export const createRoom: Action<typeof CreateRoom> = async (ctx) => {
   const player: SensitivePlayer = {
-    userId: ws.data.userId,
+    userId: ctx.ws.data.userId,
     type: 'HOST',
     ipAddress: '', // TODO: get ip address from metadata
   }
 
   const room = rm.createRoom(player);
-
   const topic = getTopic(TOPIC_PREFIX, room.id);
-  ws.subscribe(topic);
-  ws.data.subscriptions.add(topic);
-  console.log('Sending CreateRoomSuccess', {
+  const payload = {
     roomId: room.id,
     users: toClientPlayers(room.getAllPlayers()),
-  });
-  publish(topic, CreateRoomSuccess, {
-    roomId: room.id,
-    users: toClientPlayers(room.getAllPlayers()),
-  });
-  return send(CreateRoomSuccess, {
-    roomId: room.id,
-    users: toClientPlayers(room.getAllPlayers()),
-  })
+  };
+
+  ctx.subscribe(topic);
+  ctx.ws.subscribe(topic);
+  ctx.ws.data.subscriptions.add(topic);
+  ctx.publish(topic, CreateRoomSuccess, payload);
+
+  return ctx.send(CreateRoomSuccess, payload);
 }
 
-export const joinRoom: Action<typeof JoinRoom> = async ({ ws, error, send, payload, publish }) => {
-  const { roomId } = payload;
+export const joinRoom: Action<typeof JoinRoom> = async (ctx) => {
+  const { roomId } = ctx.payload;
 
   if (!RoomId.safeParse(roomId).success) {
-    return error('INVALID_ARGUMENT', 'Invalid room ID');
+    return ctx.error('INVALID_ARGUMENT', 'Invalid room ID');
   }
 
   const room = rm.getRoom(roomId);
   if (!room) {
-    return error('NOT_FOUND', 'Room not found');
+    return ctx.error('NOT_FOUND', 'Room not found');
   }
-  const existingPlayer = room.getPlayer(ws.data.userId);
 
-  const player: SensitivePlayer = existingPlayer ?? {
-    userId: ws.data.userId,
+  const topic = getTopic(TOPIC_PREFIX, roomId);
+
+
+  const host = room.getHost();
+  // Host is rejoining the room
+  if (host.userId === ctx.ws.data.userId) {
+    room.addPlayer(host);
+    const payload = { roomId, users: toClientPlayers(room.getAllPlayers()) };
+    ctx.publish(topic, JoinRoomSuccess, payload);
+    return ctx.send(JoinRoomSuccess, payload);
+  }
+
+  const player: SensitivePlayer = {
+    userId: ctx.ws.data.userId,
     type: 'GUEST',
     ipAddress: '', // TODO: get ip address from metadata
   }
   room.addPlayer(player);
 
-  const topic = getTopic(TOPIC_PREFIX, roomId);
-  ws.subscribe(topic);
-  ws.data.subscriptions.add(topic);
+  const payload = { roomId, users: toClientPlayers(room.getAllPlayers()) };
+  ctx.subscribe(topic);
+  ctx.ws.data.subscriptions.add(topic);
 
-  publish(topic, JoinRoomSuccess, {
-    roomId: roomId,
-    users: toClientPlayers(room.getAllPlayers()),
-  });
-  return send(JoinRoomSuccess, {
-    roomId: roomId,
-    users: toClientPlayers(room.getAllPlayers()),
-  });
+  ctx.publish(topic, JoinRoomSuccess, payload);
+  return ctx.send(JoinRoomSuccess, payload);
 }
 
 export const leaveRoom: Action<typeof LeaveRoom> = async (ctx) => {

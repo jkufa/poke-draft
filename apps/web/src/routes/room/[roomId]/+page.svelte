@@ -4,7 +4,7 @@
 	import { untrack } from 'svelte';
 	import type { ClientPlayer } from '@repo/draft-engine';
 	import { websocketContext } from '$lib/client/WebSocketContext.svelte';
-	import { JoinRoom } from '@repo/websocket';
+	import { JoinRoom, JoinRoomSuccess } from '@repo/websocket';
 
 	let { data } = $props();
 
@@ -19,6 +19,10 @@
 		untrack(async () => {
 			await wsc.connect();
 			await wsc.send(JoinRoom, { roomId: data.roomId });
+			wsc.on(JoinRoomSuccess, (msg) => {
+				players = msg.payload.users;
+				console.log('JoinRoomSuccess', players);
+			});
 		});
 	});
 
@@ -58,8 +62,6 @@
 </div>
 
 {#snippet PlayerSlot({ player }: { player: ClientPlayer | undefined })}
-	{data.userId}
-	{player?.userId}
 	<div class="player1 w-full">
 		{#if player?.userId === data?.userId}
 			You:
