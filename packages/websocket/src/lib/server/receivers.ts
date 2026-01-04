@@ -1,5 +1,5 @@
 import type { ServerWebSocket } from 'bun';
-import { SensitivePlayer } from '@repo/draft-engine';
+import { SensitivePlayer, toClientPlayer } from '@repo/draft-engine';
 import { roomManager as rm } from '@repo/draft-engine';
 import type { WebSocketData } from './websocket-data';
 import { logging } from '@repo/logging';
@@ -106,7 +106,7 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
         status: 'success',
         message: `Joined room successfully: ${roomId}`,
         data: {
-          users: rm.getRoom(roomId)!.players.map(p => SensitivePlayer.toClient(p)) ?? [],
+          users: rm.getRoom(roomId)!.getAllPlayers().map(p => toClientPlayer(p)) ?? [],
           roomId: roomId,
         },
       }));
@@ -115,7 +115,7 @@ export const receivers: Record<ReceiverKey, (ws: ServerWebSocket<WebSocketData>,
         status: 'success',
         message: `Joined room successfully: ${roomId}`,
         data: {
-          users: rm.getRoom(roomId)!.players.map(p => SensitivePlayer.toClient(p)) ?? [],
+          users: rm.getRoom(roomId)!.getAllPlayers().map(p => toClientPlayer(p)) ?? [],
           roomId: roomId,
         },
       }));
